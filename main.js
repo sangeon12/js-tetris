@@ -1,5 +1,5 @@
-let tetris_canvas = document.getElementById("canvas"); //캔버스 객체 가져오기
-let ctx = tetris_canvas.getContext("2d"); //캔버스에 2D객체 생성
+let tetrisCanvas = document.getElementById("canvas"); //캔버스 객체 가져오기
+let ctx = tetrisCanvas.getContext("2d"); //캔버스에 2D객체 생성
 
 let blockSize = 30; //블록 하나 크기
 let blockNumber = 0; //블록 종류
@@ -57,29 +57,40 @@ let block = [
   }
 ];
 
-let tetris_canvas_w = blockSize * 10; //캔버스 너비
-let tetris_canvas_h = blockSize * 20; //캔버스 높이
- 
-tetris_canvas.width = tetris_canvas_w; //캔버스 너비 지정
-tetris_canvas.height = tetris_canvas_h; //캔버스 높이 지정
+tetrisCanvas.width = blockSize * 10; //캔버스 너비 지정
+tetrisCanvas.height = blockSize * 20; //캔버스 높이 지정
 
-let x = (tetris_canvas_w / 2) - blockSize; //블록 x좌표
-let y = -30 - (getXY(blockNumber, blockTurn).maxY * blockSize); //블록 y좌표
+let firstX = (tetrisCanvas.width / 2) - blockSize; //처음 블록 x 좌표를 설정하는 값
+let x = firstX; //블록 x좌표
+let y = -blockSize - (getXY(blockNumber, blockTurn).maxY * blockSize); //블록 y좌표
 let moveY = 0; //사용자가 움직인 x좌표
 let moveX = 0; //사용자가 움직인 y좌표
+let overlapBlockList = [];
 
     
 function gameStart(){
     document.getElementById('game-start-btn').disabled = true;
-    drawBlock();
+    randomBlock();
 }
-drawBlock();
+
+function randomBlock(){
+  moveY = 0;
+  if(overlapBlockList.length == 7) overlapBlockList = [];
+  let randomNum = Math.ceil(Math.random() * 7 - 1);
+  if(overlapBlockList.find(x => x == randomNum) != undefined) randomBlock();
+  else{
+    overlapBlockList[overlapBlockList.length] = randomNum;
+    blockNumber = randomNum;
+    drawBlock();
+  }
+}
+
 function drawBlock() {      
     let frame = setInterval(()=>{
         document.onkeydown = checkKey;
-        moveY+=1;
+        moveY+=5;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
         for(let i = 0; i < 4; i++){
             let blockInfo = block[blockNumber][blockTurn][i]; //현재 화면에 있는 블록 정보
             ctx.fillStyle = block[blockNumber].color;
@@ -88,7 +99,10 @@ function drawBlock() {
             ctx.strokeRect(x + (blockSize * blockInfo.x) + moveX, y + (blockSize * blockInfo.y) + moveY, blockSize, blockSize);
         }
         
-        if(tetris_canvas_h - (getXY(blockNumber, blockTurn).maxY * blockSize) == moveY) clearInterval(frame);
+        if(tetrisCanvas.height - (getXY(blockNumber, blockTurn).maxY * blockSize) == moveY){
+          clearInterval(frame);
+          randomBlock();
+        } 
     }, 10);
   }
 
@@ -101,23 +115,23 @@ function drawBlock() {
           blockTurn++;
           if(blockTurn == 4) blockTurn = 0;
           let XYInfo = getXY(blockNumber, blockTurn);
-          if(moveX + (XYInfo.minX * blockSize) < -120) moveX-= (moveX + (XYInfo.minX * blockSize)) + 120;
-          if(moveX + (XYInfo.maxX * blockSize) > 150) moveX-= (moveX + (XYInfo.maxX * blockSize)) - 150;
+          if(moveX + (XYInfo.minX * blockSize) < -firstX) moveX-= (moveX + (XYInfo.minX * blockSize)) + firstX;
+          if(moveX + (XYInfo.maxX * blockSize) > firstX + blockSize) moveX-= (moveX + (XYInfo.maxX * blockSize)) - (firstX + blockSize);
           break;
         case 40: //아랫쪽 방향키
-          moveY+=30;
-          if(moveY >= 570) moveY+= (570 - moveY) - (getXY(blockNumber, blockTurn).maxY * blockSize);
+          moveY+=blockSize;
+          if(moveY >= tetrisCanvas.height) moveY+= ((tetrisCanvas.height - 1) - moveY) - (getXY(blockNumber, blockTurn).maxY * blockSize);
           break;
         case 37: //왼쪽 방향키
-          if( moveX + (getXY(blockNumber, blockTurn).minX * blockSize) <= -120) return;
-          moveX-=30;
+          if( moveX + (getXY(blockNumber, blockTurn).minX * blockSize) <= -firstX) return;
+          moveX-=blockSize;
           break;
         case 39: //오른쪽 방향키
-          if( moveX + (getXY(blockNumber, blockTurn).maxX * blockSize) >= 150) return;
-          moveX+=30;
+          if( moveX + (getXY(blockNumber, blockTurn).maxX * blockSize) >= firstX + blockSize) return;
+          moveX+=blockSize;
           break;
         case 32: //스페이스 바
-          moveY+= (570 - moveY) - (getXY(blockNumber, blockTurn).maxY * blockSize);
+          moveY+= ((tetrisCanvas.height - 1) - moveY) - (getXY(blockNumber, blockTurn).maxY * blockSize);
           break;
       }
 
@@ -127,12 +141,14 @@ function drawBlock() {
     let maxX = 0;
     let minX = 0;
     let maxY = 0;
+    let minY = 0;
     block[blockNumber][blockTurn].forEach(e => {
       if(maxX < e.x) maxX = e.x;
       if(minX > e.x) minX = e.x;
       if(maxY < e.y) maxY = e.y;
+      if(minY > e.y) minY = e.y;
     });
-    return {maxX:maxX, minX:minX, maxY:maxY};
+    return {maxX:maxX, minX:minX, maxY:maxY, minY:minY};
   }
 
 //   class Box {
