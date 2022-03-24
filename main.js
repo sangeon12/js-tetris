@@ -88,15 +88,17 @@ function randomBlock(){
 function drawBlock() {      
     let frame = setInterval(()=>{
         document.onkeydown = checkKey;
-        moveY+=5;
+        moveY+=1;
 
         ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
         for(let i = 0; i < 4; i++){
-            let blockInfo = block[blockNumber][blockTurn][i]; //현재 화면에 있는 블록 정보
+            let blockX = x + (blockSize * block[blockNumber][blockTurn][i].x) + moveX; //다음 블록 X위치
+            let blockY = y + (blockSize * block[blockNumber][blockTurn][i].y) + moveY; //다음 블록 Y위치
+
             ctx.fillStyle = block[blockNumber].color;
-            ctx.fillRect (x + (blockSize * blockInfo.x) + moveX, y + (blockSize * blockInfo.y) + moveY, blockSize, blockSize);
+            ctx.fillRect (blockX, blockY, blockSize, blockSize);
             ctx.fillStyle = "rgb(10,0,0)";
-            ctx.strokeRect(x + (blockSize * blockInfo.x) + moveX, y + (blockSize * blockInfo.y) + moveY, blockSize, blockSize);
+            ctx.strokeRect(blockX, blockY, blockSize, blockSize);
         }
         
         if(tetrisCanvas.height - (getXY(blockNumber, blockTurn).maxY * blockSize) == moveY){
