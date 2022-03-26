@@ -66,7 +66,6 @@ let y = -blockSize - (getXY(blockNumber, blockTurn).maxY * blockSize); //블록 
 let moveY = 0; //사용자가 움직인 x좌표
 let moveX = 0; //사용자가 움직인 y좌표
 let overlapBlockList = [];
-let frame; //블록을 
 
 let tetrisCanvasPoint = new Array(20);
 
@@ -85,22 +84,36 @@ function gameStart(){
 
 function randomBlock(){
   moveY = 0;
-  moveX = 0;
   if(overlapBlockList.length == 7) overlapBlockList = [];
   let randomNum = Math.ceil(Math.random() * 7 - 1);
   if(overlapBlockList.find(x => x == randomNum) != undefined) randomBlock();
   else{
     overlapBlockList[overlapBlockList.length] = randomNum;
     blockNumber = randomNum;
-    setFrame();
+    drawBlock();
   }
 }
 
-function setFrame() {      
-    frame = setInterval(()=>{
+function drawBlock() {      
+    let frame = setInterval(()=>{
         document.onkeydown = checkKey;
         moveY+=30;
-        drawBlock();
+
+        ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+        for(let i = 0; i < 4; i++){
+            let blockX = x + (blockSize * block[blockNumber][blockTurn][i].x) + moveX; //다음 블록 X위치
+            let blockY = y + (blockSize * block[blockNumber][blockTurn][i].y) + moveY; //다음 블록 Y위치
+
+            ctx.fillStyle = block[blockNumber].color;
+            ctx.fillRect (blockX, blockY, blockSize, blockSize);
+            ctx.fillStyle = "rgb(10,0,0)";
+            ctx.strokeRect(blockX, blockY, blockSize, blockSize);
+        }
+        
+        if(tetrisCanvas.height - (getXY(blockNumber, blockTurn).maxY * blockSize) == moveY){
+          clearInterval(frame);
+          randomBlock();
+        } 
     }, 1000);
   }
 
@@ -132,8 +145,18 @@ function setFrame() {
           moveY+= ((tetrisCanvas.height - 1) - moveY) - (getXY(blockNumber, blockTurn).maxY * blockSize);
           break;
       }
-      
-      drawBlock();
+
+      ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+        for(let i = 0; i < 4; i++){
+            let blockX = x + (blockSize * block[blockNumber][blockTurn][i].x) + moveX; //다음 블록 X위치
+            let blockY = y + (blockSize * block[blockNumber][blockTurn][i].y) + moveY; //다음 블록 Y위치
+
+            ctx.fillStyle = block[blockNumber].color;
+            ctx.fillRect (blockX, blockY, blockSize, blockSize);
+            ctx.fillStyle = "rgb(10,0,0)";
+            ctx.strokeRect(blockX, blockY, blockSize, blockSize);
+        }
+
   }
 
   function getXY(blockNumber, blockTurn){
@@ -150,20 +173,4 @@ function setFrame() {
     return {maxX:maxX, minX:minX, maxY:maxY, minY:minY};
   }
 
-  function drawBlock(){
-    ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
-    for(let i = 0; i < 4; i++){
-        let blockX = x + (blockSize * block[blockNumber][blockTurn][i].x) + moveX; //다음 블록 X위치
-        let blockY = y + (blockSize * block[blockNumber][blockTurn][i].y) + moveY; //다음 블록 Y위치
-
-        ctx.fillStyle = block[blockNumber].color;
-        ctx.fillRect (blockX, blockY, blockSize, blockSize);
-        ctx.fillStyle = "rgb(10,0,0)";
-        ctx.strokeRect(blockX, blockY, blockSize, blockSize);
-    }
-    
-    if(tetrisCanvas.height - (getXY(blockNumber, blockTurn).maxY * blockSize) == moveY){
-      clearInterval(frame);
-      randomBlock();
-    } 
-  }
+  
