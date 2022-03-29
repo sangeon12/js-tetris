@@ -132,10 +132,12 @@ function setFrame() { //블록을 내리는 인터벌
             break;
           case 37: //왼쪽 방향키
             if( moveX + (XYInfo.minX * blockSize) <= -firstX) return;
+            if(blockHitX() == -1) return;
             moveX-=blockSize;
             break;
           case 39: //오른쪽 방향키
             if( moveX + (XYInfo.maxX * blockSize) >= firstX + blockSize) return;
+            if(blockHitX() == 1) return;
             moveX+=blockSize;
             break;
           case 32: //스페이스 바
@@ -153,13 +155,21 @@ function setFrame() { //블록을 내리는 인터벌
 
   function drawBlock(){ //블록을 그리는 함수
     ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+
+    for(let i = 0; i < 20; i++){
+      for(let j = 0; j < 10; j++){
+        ctx.strokeStyle  = "#dddddd";
+        ctx.strokeRect(blockSize * j, blockSize * i, blockSize, blockSize);
+      }
+    }
+
     for(let i = 0; i < 4; i++){
         let blockX = x + (blockSize * block[blockNumber][blockTurn][i].x) + moveX; //다음 블록 X위치
         let blockY = y + (blockSize * block[blockNumber][blockTurn][i].y) + moveY; //다음 블록 Y위치
 
         ctx.fillStyle = block[blockNumber].color;
         ctx.fillRect (blockX, blockY, blockSize, blockSize);
-        ctx.fillStyle = "rgb(10,0,0)";
+        ctx.strokeStyle  = "#000000";
         ctx.strokeRect(blockX, blockY, blockSize, blockSize);
     }
 
@@ -171,15 +181,8 @@ function setFrame() { //블록을 내리는 인터벌
     
             ctx.fillStyle = block[tetrisCanvasAddress[i][j]].color;
             ctx.fillRect (blockX, blockY, blockSize, blockSize);
-            ctx.fillStyle = "rgb(10,0,0)";
             ctx.strokeRect(blockX, blockY, blockSize, blockSize);
         }
-      }
-    }
-
-    for(let i = 0; i < 20; i++){
-      for(let j = 0; j < 10; j++){
-        ctx.strokeRect(blockSize * j, blockSize * i, blockSize, blockSize);
       }
     }
     
@@ -200,12 +203,13 @@ function setFrame() { //블록을 내리는 인터벌
   }
 
   function blockHitX(){ //블록 충돌을 구현하는 함수
-    let blockHitResult = true;
+    let blockHitResult = 0;
     let blockAddressX = (moveX + firstX) / blockSize; //현재 블록 x 위치
     let blockAddressY = moveY / blockSize; //현재 블록 y 위치
     
     block[blockNumber][blockTurn].forEach((e)=>{
-      if(tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x] > -1) blockHitResult = false;
+      if(tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x + 1] > -1 ) blockHitResult = 1;
+      if(tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x - 1] > -1) blockHitResult = -1;
     });
 
     return blockHitResult;
