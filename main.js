@@ -141,7 +141,6 @@ function setFrame() { //블록을 내리는 인터벌
             moveX+=blockSize;
             break;
           case 32: //스페이스 바
-            // moveY+=((tetrisCanvas.height - blockSize) - moveY) - (XYInfo.maxY * blockSize);
             let stop = true;
             while(stop){
               if(blockHitY()) moveY+=blockSize;
@@ -199,6 +198,7 @@ function setFrame() { //블록을 내리는 인터벌
 
     block[blockNumber][blockTurn].forEach((e)=>{
       tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x] = blockNumber;
+      if(tetrisCanvasAddress[blockAddressY + e.y].find(x => x == -1) == undefined) oneLineBoom(blockAddressY + e.y);
     });
   }
 
@@ -226,6 +226,13 @@ function setFrame() { //블록을 내리는 인터벌
    });
     
     return blockHitResult;
+  }
+
+  function oneLineBoom(y){
+    for(let i = y; i == 0; i--){
+      console.log('실행');
+      tetrisCanvasAddress[i] = tetrisCanvasAddress[i-1];
+    }
   }
 
   function getXY(blockNumber, blockTurn){ //현재 블록의 XY값을 가져오는 함수
