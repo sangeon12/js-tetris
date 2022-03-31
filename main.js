@@ -229,10 +229,8 @@ function setFrame() { //블록을 내리는 인터벌
   }
 
   function oneLineBoom(y){
-    for(let i = y; i == 0; i--){
-      console.log('실행');
-      tetrisCanvasAddress[i] = tetrisCanvasAddress[i-1];
-    }
+    tetrisCanvasAddress = ...tetrisCanvasAddress.splice(0, y);
+    // if(tetrisCanvasAddress[y-1].find(x => x == -1) == undefined) oneLineBoom(y-1);
   }
 
   function getXY(blockNumber, blockTurn){ //현재 블록의 XY값을 가져오는 함수
