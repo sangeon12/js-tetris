@@ -98,12 +98,13 @@ function randomBlock(){ //블록을 랜덤으로 지정해주는 함수
 
 function setFrame() { //블록을 내리는 인터벌
     frame = setInterval(()=>{
-      document.onkeydown = checkKey;
       if(!blockHitY()){
         clearInterval(frame);
-        blockAddress();
-        randomBlock();
+        blockAddress().then(()=>{
+          randomBlock();
+        });
       }else{
+        document.onkeydown = checkKey;
         moveY+=blockSize;
         drawBlock(); 
       }
@@ -112,47 +113,51 @@ function setFrame() { //블록을 내리는 인터벌
 
   function checkKey(e) { //키 입력을 체크하고 블록을 조종하는 함수
       e = e || window.event;
-      let XYInfo = getXY(blockNumber, blockTurn);
+      let XYInfo = getXY(blockNumber, blockTurn); //블록의 x, y 값
+      let blockAddressX = (moveX + firstX) / blockSize; //현재 블록 x 위치
+      let blockAddressY = moveY / blockSize; //현재 블록 y 위치
 
-      if(!blockHitY()){
-        clearInterval(frame);
-        blockAddress();
-        randomBlock();
-      }else{
-        switch(e.keyCode){
-          case 38: //윗쪽 방향키
-            blockTurn++;
-            if(blockTurn == 4) blockTurn = 0;
-            XYInfo = getXY(blockNumber, blockTurn);
-            if(moveX + (XYInfo.minX * blockSize) < -firstX) moveX-= (moveX + (XYInfo.minX * blockSize)) + firstX;
-            if(moveX + (XYInfo.maxX * blockSize) > firstX + blockSize) moveX-= (moveX + (XYInfo.maxX * blockSize)) - (firstX + blockSize);
-            break;
-          case 40: //아랫쪽 방향키
-            moveY+=blockSize;
-            break;
-          case 37: //왼쪽 방향키
-            if( moveX + (XYInfo.minX * blockSize) <= -firstX) return;
-            if(blockHitX() == -1) return;
-            moveX-=blockSize;
-            break;
-          case 39: //오른쪽 방향키
-            if( moveX + (XYInfo.maxX * blockSize) >= firstX + blockSize) return;
-            if(blockHitX() == 1) return;
-            moveX+=blockSize;
-            break;
-          case 32: //스페이스 바
-            let stop = true;
-            while(stop){
-              if(blockHitY()) moveY+=blockSize;
-              else stop = false;;
-            }
-            break;
-        }
-        drawBlock(); 
+      switch(e.keyCode){
+        case 38: //윗쪽 방향키
+          blockTurn++;
+          if(blockTurn == 4) blockTurn = 0;
+          XYInfo = getXY(blockNumber, blockTurn);
+          if(moveX + (XYInfo.minX * blockSize) < -firstX) moveX-= (moveX + (XYInfo.minX * blockSize)) + firstX;
+          if(moveX + (XYInfo.maxX * blockSize) > firstX + blockSize) moveX-= (moveX + (XYInfo.maxX * blockSize)) - (firstX + blockSize);
+          // if( (tetrisCanvas.height - blockSize) - (XYInfo.maxY * blockSize) < moveY) moveY-=XYInfo.maxY*blockSize;
+          // block[blockNumber][blockTurn].forEach((e)=>{
+          //   if(tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x] > -1){
+          //     moveX-=blockSize*e.x;
+          //     moveY-=blockSize*e.y;
+          //   }
+          // });
+          break;
+        case 40: //아랫쪽 방향키
+          if(!blockHitY()) return;
+          moveY+=blockSize;
+          break;
+        case 37: //왼쪽 방향키
+          if( moveX + (XYInfo.minX * blockSize) <= -firstX) return;
+          if(blockHitX() == -1) return;
+          moveX-=blockSize;
+          break;
+        case 39: //오른쪽 방향키
+          if( moveX + (XYInfo.maxX * blockSize) >= firstX + blockSize) return;
+          if(blockHitX() == 1) return;
+          moveX+=blockSize;
+          break;
+        case 32: //스페이스 바
+          let stop = true;
+          while(stop){
+            if(blockHitY()) moveY+=blockSize;
+            else stop = false;;
+          }
+          break;
       }
+      drawBlock(); 
   }
 
-  function drawBlock(){ //블록을 그리는 함수
+  function drawBlock(){ //      블록을 그리는 함수
     ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
 
     for(let i = 0; i < 20; i++){
@@ -184,21 +189,22 @@ function setFrame() { //블록을 내리는 인터벌
         }
       }
     }
-    
-    if( (tetrisCanvas.height - blockSize) - (getXY(blockNumber, blockTurn).maxY * blockSize) <= moveY){
-      clearInterval(frame);
-      blockAddress();
-      randomBlock();
-    } 
   }
 
   function blockAddress(){ //블록의 위치를 2차원 리스트에 저장하는 함수
-    let blockAddressX = (moveX + firstX) / blockSize; //현재 블록 x 위치
-    let blockAddressY = moveY / blockSize; //현재 블록 y 위치
-
-    block[blockNumber][blockTurn].forEach((e)=>{
-      tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x] = blockNumber;
-      if(tetrisCanvasAddress[blockAddressY + e.y].find(x => x == -1) == undefined) oneLineBoom(blockAddressY + e.y);
+    return new Promise((resolve, reject)=>{
+      let blockAddressX = (moveX + firstX) / blockSize; //현재 블록 x 위치
+      let blockAddressY = moveY / blockSize; //현재 블록 y 위치
+  
+      block[blockNumber][blockTurn].forEach((e)=>{
+        tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x] = blockNumber;
+        if(tetrisCanvasAddress[blockAddressY + e.y].find(x => x == -1) == undefined){
+          for(let i = blockAddressY + e.y; i > 0; i--){
+            tetrisCanvasAddress[i] = tetrisCanvasAddress[i-1];
+          }
+        }
+      });
+      resolve();
     });
   }
 
@@ -220,7 +226,7 @@ function setFrame() { //블록을 내리는 인터벌
     let blockAddressX = (moveX + firstX) / blockSize; //현재 블록 x 위치
     let blockAddressY = moveY / blockSize; //현재 블록 y 위치
     
-    if(blockAddressY + getXY(blockNumber, blockTurn).maxY == 19) return;
+    if( (tetrisCanvas.height - blockSize) - (getXY(blockNumber, blockTurn).maxY * blockSize) <= moveY) return false;
     block[blockNumber][blockTurn].forEach((e)=>{
       if(tetrisCanvasAddress[blockAddressY + e.y + 1][blockAddressX + e.x] > -1) blockHitResult = false;
    });
@@ -228,10 +234,14 @@ function setFrame() { //블록을 내리는 인터벌
     return blockHitResult;
   }
 
-  function oneLineBoom(y){
-    tetrisCanvasAddress = ...tetrisCanvasAddress.splice(0, y);
-    // if(tetrisCanvasAddress[y-1].find(x => x == -1) == undefined) oneLineBoom(y-1);
-  }
+  // function oneLineBoom(y){
+  //   return new Promise((resolve, reject)=>{
+  //     for(let i = y; i > 0; i--){
+  //       tetrisCanvasAddress[i] = tetrisCanvasAddress[i-1];
+  //     }
+  //     resolve();
+  //   });
+  // }
 
   function getXY(blockNumber, blockTurn){ //현재 블록의 XY값을 가져오는 함수
     let maxX = 0;
