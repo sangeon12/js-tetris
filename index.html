@@ -6,15 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>    
     <style>
-        #canvas{
+        #canvas, #hold_canvas{
             border: 1px solid black;
             
+        }
+        .container{
+            display: grid;
+            grid-template-columns: auto auto;
         }
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    <button id="game-start-btn" onclick="gameStart()">게임시작</button>
+    <div class="container">
+        <canvas id="hold_canvas"></canvas>
+        <div>
+            <canvas id="canvas"></canvas>
+            <button id="game-start-btn" onclick="gameStart()">게임시작</button>
+        </div>
+    </div>
     <script src="main.js"></script>
 </body>
 </html>
