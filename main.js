@@ -69,12 +69,13 @@ holdCanvas.height = blockSize * 5;
 
 let firstX = (tetrisCanvas.width / 2) - blockSize; //처음 블록 x 좌표를 설정하는 값
 let x = firstX; //블록 x좌표
-// let y = -blockSize - (getXY(blockNumber, blockTurn).maxY * blockSize); //블록 y좌표
 let y = 0; //블록 y좌표
 let moveY = 0; //사용자가 움직인 x좌표
 let moveX = 0; //사용자가 움직인 y좌표
-let overlapBlockList = []; //랜덤으로 나오는 블럭이 중복되지 않기 위해서 사용하는 리스트
+let blockList = []; //블록을 랜덤으로 7개 뽑아 저장하는 리스트
 let frame; //블록을 1초마다 내리는 프레임을 저장하는 변수
+
+let holdBlockNumber = -1; //블록을 저장하는 변수
 
 let tetrisCanvasAddress = new Array(20); // 테트리스 판에 블록 좌표를 저장하는 2차원 리스트
 for(let i = 0; i< tetrisCanvasAddress.length; i++){
@@ -90,17 +91,24 @@ function gameStart(){ //게임을 시작하는 함수
 }
 
 function randomBlock(){ //블록을 랜덤으로 지정해주는 함수
+  while(true){
+    let randomNum = Math.ceil(Math.random() * 7 - 1);
+    if(blockList.find(x => x == randomNum) == undefined) blockList[blockList.length] = randomNum;
+    if(blockList.length == 7) break;
+  }
+  nextBlock();
+}
+
+function nextBlock(){ //다음블록을 정하는 함수
+  if(blockList.length == 0){
+    randomBlock();
+    return;
+  } 
   moveY = 0;
   moveX = 0;
   blockTurn = 0;
-  if(overlapBlockList.length == 7) overlapBlockList = [];
-  let randomNum = Math.ceil(Math.random() * 7 - 1);
-  if(overlapBlockList.find(x => x == randomNum) != undefined) randomBlock();
-  else{
-    overlapBlockList[overlapBlockList.length] = randomNum;
-    blockNumber = randomNum;
-    setFrame();
-  }
+  blockNumber = blockList.splice(0 , 1);
+  setFrame();
 }
 
 function setFrame() { //블록을 내리는 인터벌
@@ -108,7 +116,7 @@ function setFrame() { //블록을 내리는 인터벌
       if(blockHitY()){
         clearInterval(frame);
         blockAddress();
-        randomBlock();
+        nextBlock();
       }else{
         document.onkeydown = checkKey;
         moveY+=blockSize;
@@ -162,13 +170,13 @@ function setFrame() { //블록을 내리는 인터벌
           }
           break;
         case 67:
-          console.log('c클릭');
+          getHoldBlock();
           break;
       }
       drawBlock(); 
   }
 
-  function drawBlock(){ //      블록을 그리는 함수
+  function drawBlock(){ //블록을 그리는 함수
     ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
 
     for(let i = 0; i < 20; i++){
@@ -202,11 +210,49 @@ function setFrame() { //블록을 내리는 인터벌
     }
   }
 
+  function lineBoomDraw(){ //라인이 지워졌을때 블록을 그려주는 함수
+    ctx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+
+    for(let i = 0; i < 20; i++){
+      for(let j = 0; j < 10; j++){
+        ctx.strokeStyle  = "#dddddd";
+        ctx.strokeRect(blockSize * j, blockSize * i, blockSize, blockSize);
+      }
+    }
+
+    for(let i = 0; i < 20; i++){
+      for(let j = 0; j < 10; j++){
+        if(tetrisCanvasAddress[i][j] != -1){
+          let blockX = x + ( (blockSize * j) - firstX );
+            let blockY = y + (blockSize * i);
+    
+            ctx.fillStyle = block[tetrisCanvasAddress[i][j]].color;
+            ctx.fillRect (blockX, blockY, blockSize, blockSize);
+            ctx.strokeStyle  = "#000000";
+            ctx.strokeRect(blockX, blockY, blockSize, blockSize);
+        }
+      }
+    }
+  }
+
+  function holdBlockDraw(){
+    holdCtx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+    for(let i = 0; i < 4; i++){
+        let blockX = (50 + blockSize * block[holdBlockNumber][0][i].x); //다음 블록 X위치
+        let blockY = (50 + blockSize * block[holdBlockNumber][0][i].y); //다음 블록 Y위치
+
+        holdCtx.fillStyle = block[holdBlockNumber].color;
+        holdCtx.fillRect (blockX, blockY, blockSize, blockSize);
+        holdCtx.strokeStyle  = "#000000";
+        holdCtx.strokeRect(blockX, blockY, blockSize, blockSize);
+    }
+  }
+
   function blockAddress(){ //블록의 위치를 2차원 리스트에 저장하는 함수
     let blockAddressX = (moveX + firstX) / blockSize; //현재 블록 x 위치
       let blockAddressY = moveY / blockSize; //현재 블록 y 위치
   
-      let fullLine = [];
+      let fullLine = [];  
       block[blockNumber][blockTurn].forEach((e)=>{
         tetrisCanvasAddress[blockAddressY + e.y][blockAddressX + e.x] = blockNumber;
         if(tetrisCanvasAddress[blockAddressY + e.y].find(x => x == -1) == undefined) fullLine[fullLine.length] = blockAddressY + e.y;
@@ -225,6 +271,7 @@ function setFrame() { //블록을 내리는 인터벌
         tetrisCanvasAddress[i] = tetrisCanvasAddress[i-1];
       }
     });
+    lineBoomDraw();
   }
 
   function blockHitX(){ //블록 충돌을 구현하는 함수
@@ -265,4 +312,11 @@ function setFrame() { //블록을 내리는 인터벌
       if(minY > e.y) minY = e.y;
     });
     return {maxX:maxX, minX:minX, maxY:maxY, minY:minY};
+  }
+
+  function getHoldBlock(){
+    clearInterval(frame);
+    nextBlock();
+    holdBlockNumber = blockNumber;
+    holdBlockDraw();
   }
