@@ -76,6 +76,7 @@ let blockList = []; //블록을 랜덤으로 7개 뽑아 저장하는 리스트
 let frame; //블록을 1초마다 내리는 프레임을 저장하는 변수
 
 let holdBlockNumber = -1; //블록을 저장하는 변수
+let holdOne = true; //홀드 기능을 한턴에 한번만 사용할 수 있게 조절하는 함수
 
 let tetrisCanvasAddress = new Array(20); // 테트리스 판에 블록 좌표를 저장하는 2차원 리스트
 for(let i = 0; i< tetrisCanvasAddress.length; i++){
@@ -117,6 +118,7 @@ function setFrame() { //블록을 내리는 인터벌
         clearInterval(frame);
         blockAddress();
         nextBlock();
+        holdOne = true;
       }else{
         document.onkeydown = checkKey;
         moveY+=blockSize;
@@ -170,6 +172,8 @@ function setFrame() { //블록을 내리는 인터벌
           }
           break;
         case 67:
+          if(!holdOne) return;
+          holdOne = false;
           getHoldBlock();
           break;
       }
@@ -235,19 +239,6 @@ function setFrame() { //블록을 내리는 인터벌
     }
   }
 
-  function holdBlockDraw(){
-    holdCtx.clearRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
-    for(let i = 0; i < 4; i++){
-        let blockX = (50 + blockSize * block[holdBlockNumber][0][i].x); //다음 블록 X위치
-        let blockY = (50 + blockSize * block[holdBlockNumber][0][i].y); //다음 블록 Y위치
-
-        holdCtx.fillStyle = block[holdBlockNumber].color;
-        holdCtx.fillRect (blockX, blockY, blockSize, blockSize);
-        holdCtx.strokeStyle  = "#000000";
-        holdCtx.strokeRect(blockX, blockY, blockSize, blockSize);
-    }
-  }
-
   function blockAddress(){ //블록의 위치를 2차원 리스트에 저장하는 함수
     let blockAddressX = (moveX + firstX) / blockSize; //현재 블록 x 위치
       let blockAddressY = moveY / blockSize; //현재 블록 y 위치
@@ -258,20 +249,18 @@ function setFrame() { //블록을 내리는 인터벌
         if(tetrisCanvasAddress[blockAddressY + e.y].find(x => x == -1) == undefined) fullLine[fullLine.length] = blockAddressY + e.y;
       });
       
-      if(fullLine.length > 0) oneLineBoom(fullLine);
-  }
-
-  function oneLineBoom(fullLine){
-    fullLine.sort((a, b)=>{return a - b;});
-    fullLine.forEach((e)=>{
-      tetrisCanvasAddress[e].forEach((e)=>{
-        e = -1;
-      });
-      for(let i = e; i > 0; i--){
-        tetrisCanvasAddress[i] = tetrisCanvasAddress[i-1];
+      if(fullLine.length > 0){
+        fullLine.sort((a, b)=>{return a - b;});
+        fullLine.forEach((e)=>{
+          tetrisCanvasAddress[e].forEach((e)=>{
+            e = -1;
+          });
+          for(let i = e; i > 0; i--){
+            tetrisCanvasAddress[i] = tetrisCanvasAddress[i-1];
+          }
+        });
+        lineBoomDraw();
       }
-    });
-    lineBoomDraw();
   }
 
   function blockHitX(){ //블록 충돌을 구현하는 함수
@@ -314,9 +303,40 @@ function setFrame() { //블록을 내리는 인터벌
     return {maxX:maxX, minX:minX, maxY:maxY, minY:minY};
   }
 
+  function holdBlockDraw(){
+    holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+    for(let i = 0; i < 4; i++){
+        let blockX = (50 + blockSize * block[holdBlockNumber][0][i].x); //다음 블록 X위치
+        let blockY = (50 + blockSize * block[holdBlockNumber][0][i].y); //다음 블록 Y위치
+
+        holdCtx.fillStyle = block[holdBlockNumber].color;
+        holdCtx.fillRect (blockX, blockY, blockSize, blockSize);
+        holdCtx.strokeStyle  = "#000000";
+        holdCtx.strokeRect(blockX, blockY, blockSize, blockSize);
+    }
+  }
+
+  function holdBlockChange(){
+    moveY = blockSize;
+    moveX = 0;
+    blockTurn = 0;
+    setFrame();
+  }
+
   function getHoldBlock(){
-    clearInterval(frame);
-    nextBlock();
-    holdBlockNumber = blockNumber;
+    clearInterval(frame); 
+    switch(holdBlockNumber){
+      case -1:
+        holdBlockNumber = blockNumber;
+        nextBlock();
+        moveY+=blockSize;
+        break;
+      default:
+        let temp = holdBlockNumber;
+        holdBlockNumber = blockNumber;
+        blockNumber = temp;
+        holdBlockChange();
+        break;
+    }   
     holdBlockDraw();
   }
